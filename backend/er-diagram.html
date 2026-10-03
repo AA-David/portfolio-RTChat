@@ -1,0 +1,590 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RT Chat ER Diagram</title>
+<style>
+  :root {
+    --bg: #f6f7f9;
+    --grid: #dfe3e9;
+    --card: #ffffff;
+    --text: #1c2230;
+    --muted: #6b7385;
+    --border: #c9ceda;
+    --line: #5d6579;
+    --hl: #e0542b;
+    --panel: rgba(255,255,255,.92);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #12151c; --grid: #1d222c; --card: #1b202b; --text: #e7eaf1;
+      --muted: #8a93a8; --border: #333b4d; --line: #8a93a8; --hl: #ff8a5c;
+      --panel: rgba(27,32,43,.92);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #12151c; --grid: #1d222c; --card: #1b202b; --text: #e7eaf1;
+    --muted: #8a93a8; --border: #333b4d; --line: #8a93a8; --hl: #ff8a5c;
+    --panel: rgba(27,32,43,.92);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); color: var(--text);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  svg#stage { position: fixed; inset: 0; width: 100%; height: 100%; cursor: grab; touch-action: none; user-select: none; }
+  svg#stage.panning { cursor: grabbing; }
+  .entity { cursor: default; }
+  .entity .box { fill: var(--card); stroke: var(--border); stroke-width: 1.5; }
+  .entity.embedded .box { stroke-dasharray: 6 4; }
+  .entity text { fill: var(--text); font-size: 13px; }
+  .entity .title { font-size: 15px; font-weight: 700; fill: #fff; }
+  .entity .sub { font-size: 10px; fill: rgba(255,255,255,.8); }
+  .entity .type { fill: var(--muted); font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; }
+  .entity .badge { font-size: 9px; font-weight: 700; fill: var(--muted); }
+  .entity .badge.pk { fill: #c98a00; }
+  .entity .badge.fk { fill: #2f7de1; }
+  .entity .badge.emb { fill: #8a55d6; }
+  .entity .req { fill: var(--hl); font-weight: 700; }
+  .entity .rowline { stroke: var(--grid); stroke-width: 1; }
+  .entity.dim { opacity: .3; }
+  .entity.focus .box { stroke: var(--hl); stroke-width: 2.5; }
+  .rel { fill: none; stroke: var(--line); stroke-width: 1.6; opacity: .85; stroke-linejoin: miter; }
+  .rel.poly { stroke-dasharray: 7 5; }
+  .rel.embed { stroke-width: 2.4; }
+  .rel.dim { opacity: .1; }
+  .rel.hl { stroke: var(--hl); stroke-width: 2.6; opacity: 1; }
+  .card { fill: var(--muted); font-size: 12px; font-weight: 700; pointer-events: none; }
+  .card.dim { opacity: .1; }
+  .card.hl { fill: var(--hl); }
+  .relhit { fill: none; stroke: transparent; stroke-width: 14; cursor: help; }
+  #bar { position: fixed; top: 12px; left: 12px; display: flex; gap: 6px; align-items: center; flex-wrap: wrap;
+    background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 6px;
+    backdrop-filter: blur(6px); z-index: 2; max-width: calc(100vw - 24px); }
+  #bar button { font: inherit; font-size: 14px; min-width: 34px; height: 32px; border-radius: 7px; cursor: pointer;
+    border: 1px solid var(--border); background: var(--card); color: var(--text); padding: 0 10px; }
+  #bar button:hover { border-color: var(--hl); }
+  #zoom { min-width: 64px; text-align: center; font-variant-numeric: tabular-nums; font-size: 13px; color: var(--muted); }
+  #legend { position: fixed; left: 12px; bottom: 12px; background: var(--panel); border: 1px solid var(--border);
+    border-radius: 10px; padding: 10px 12px; font-size: 12px; line-height: 1.7; z-index: 2; max-width: 320px; }
+  #legend .sw { display: inline-block; width: 28px; vertical-align: middle; margin-right: 6px; border-top: 2px solid var(--line); }
+  #legend .sw.d { border-top-style: dashed; }
+  #legend .sw.t { border-top-width: 3.5px; }
+  #legend .k { color: var(--muted); }
+  #tip { position: fixed; pointer-events: none; z-index: 5; background: var(--card); color: var(--text);
+    border: 1px solid var(--border); border-radius: 8px; padding: 6px 9px; font-size: 12px; max-width: 320px;
+    box-shadow: 0 4px 16px rgba(0,0,0,.18); display: none; white-space: pre-line; }
+  #hint { position: fixed; right: 12px; bottom: 12px; font-size: 12px; color: var(--muted); z-index: 2;
+    background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; }
+  #theme b { color: var(--hl); }
+  #theme span { color: var(--muted); }
+  @media (max-width: 640px) { #hint, #legend { display: none; } }
+</style>
+</head>
+<body>
+
+<svg id="stage" xmlns="http://www.w3.org/2000/svg" aria-label="RT Chat entity relationship diagram">
+  <defs>
+    <pattern id="dots" width="48" height="48" patternUnits="userSpaceOnUse">
+      <circle cx="1" cy="1" r="1.3" fill="var(--grid)"/>
+    </pattern>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto">
+      <path d="M1 1 L9 5 L1 9" fill="none" stroke="var(--line)" stroke-width="1.6"/>
+    </marker>
+    <marker id="diamond" viewBox="0 0 14 10" refX="1" refY="5" markerWidth="14" markerHeight="10" orient="auto">
+      <path d="M1 5 L7 1 L13 5 L7 9 Z" fill="var(--line)"/>
+    </marker>
+  </defs>
+  <rect x="-1e7" y="-1e7" width="2e7" height="2e7" fill="url(#dots)"/>
+  <g id="world">
+    <g id="rels"></g>
+    <g id="ents"></g>
+  </g>
+</svg>
+
+<div id="bar">
+  <button id="zin" title="Zoom in (+)">+</button>
+  <span id="zoom">100%</span>
+  <button id="zout" title="Zoom out (-)">−</button>
+  <button id="fit" title="Fit to screen (0)">Fit to screen</button>
+  <button id="theme" title="Switch between light and dark"><span id="tl">light</span> / <span id="td">dark</span></button>
+</div>
+
+<div id="legend">
+  <b>Legend</b><br>
+  <span class="sw"></span>reference (ObjectId → collection)<br>
+  <span class="sw t"></span>embedded subdocument (◆ on the owner)<br>
+  <span class="sw d"></span>polymorphic ref (<span class="k">refPath</span>)<br>
+  <span class="k">PK</span> primary key · <span class="k">FK</span> reference · <span class="k">EMB</span> embedded<br>
+  <span style="color:var(--hl);font-weight:700">*</span> required field · dashed box = not a collection<br>
+  Line ends: <b>1</b> one · <b>*</b> many · <b>0..1</b> optional<br>
+  <span class="k">Hover a table to highlight its links; hover a field or link for details.</span>
+</div>
+
+<div id="hint">Scroll / pinch = zoom (no limit) · Drag background = pan · Keys: + − 0</div>
+<div id="tip"></div>
+
+<!-- ============ Data + router (DOM-free) ============ -->
+<script id="core">
+// field: [name, type, flags[], note]   flags: pk fk emb req
+const TS = [['createdAt', 'Date', [], 'Mongoose timestamps'], ['updatedAt', 'Date', [], 'Mongoose timestamps']];
+const ID = ['_id', 'ObjectId', ['pk'], 'Auto-generated'];
+
+// Sizes are multiples of G so every field row and table edge sits on the routing grid.
+const G = 12, W = 360, HEAD = 36, ROW = 24;
+
+const ENTITIES = {
+  User: { x: 0, y: 0, hue: 215, sub: 'collection', fields: [
+    ID,
+    ['handle', 'String', ['req'], 'unique · trim · length 3–30'],
+    ['email', 'String', ['req'], 'unique · lowercase · trim · validated with validator.isEmail'],
+    ['password', 'String', ['req']],
+    ['pfp', 'String', [], "default ''  (TODO: revisit default)"],
+    ...TS,
+  ]},
+  Conversation: { x: 600, y: 0, hue: 160, sub: 'collection', fields: [
+    ID,
+    ['members', '[ObjectId → User]', ['fk', 'req'], 'Array of User refs. No type field: DM vs group is inferred from member count'],
+    ['title', 'String', [], "trim · max 100 · default ''"],
+    ['icon', 'String', [], "default ''"],
+    ...TS,
+  ]},
+  Message: { x: 600, y: 312, hue: 265, sub: 'collection', fields: [
+    ID,
+    ['content', 'String', ['req'], 'trim · max 4000'],
+    ['author', 'ObjectId → User', ['fk', 'req']],
+    ['conversationId', 'ObjectId → Conversation', ['fk', 'req'], 'indexed'],
+    ['repliedTo', 'ObjectId → Message', ['fk'], 'default null · threaded replies (self reference)'],
+    ['edited', 'Boolean', ['req'], 'default false · true once the message has been edited'],
+    ['reactions', '[Reaction]', ['emb'], 'Embedded subdocuments'],
+    ['mentions', '[Mention]', ['emb'], 'Inline @mentions. Validated: users must be conversation members, files/snippets must belong to the same conversation'],
+    ['attachments', '[Attachment]', ['emb'], 'Validated: files/snippets must belong to the same conversation'],
+    ...TS,
+  ]},
+  Reaction: { x: 0, y: 336, hue: 265, embedded: true, sub: 'embedded in Message · no _id', fields: [
+    ['emoji', 'String', ['req']],
+    ['users', '[ObjectId → User]', ['fk'], 'Users who reacted with this emoji'],
+  ]},
+  Mention: { x: 0, y: 552, hue: 265, embedded: true, sub: 'embedded in Message · no _id', fields: [
+    ['kind', "'User' | 'File' | 'Snippet'", ['req'], 'enum. Tells Mongoose which collection `target` lives in'],
+    ['target', 'ObjectId', ['fk', 'req'], 'refPath: mentions.kind. Stored by id so renames never break mentions'],
+  ]},
+  Attachment: { x: 1200, y: 504, hue: 265, embedded: true, sub: 'embedded in Message · no _id', fields: [
+    ['kind', "'File' | 'Snippet'", ['req'], 'enum'],
+    ['target', 'ObjectId', ['fk', 'req'], 'refPath: attachments.kind'],
+  ]},
+  Snippet: { x: 1200, y: 120, hue: 30, sub: 'collection', fields: [
+    ID,
+    ['title', 'String', ['req'], 'trim · max 100'],
+    ['content', 'String', ['req'], 'Plain text stored in Mongo'],
+    ['language', 'String', ['req'], 'trim · lowercase'],
+    ['uploadedBy', 'ObjectId → User', ['fk', 'req']],
+    ['conversationId', 'ObjectId → Conversation', ['fk', 'req'], 'indexed'],
+    ['tags', '[ObjectId → Tag]', ['fk']],
+    ...TS,
+  ]},
+  File: { x: 2400, y: 0, hue: 345, sub: 'collection', fields: [
+    ID,
+    ['title', 'String', ['req'], 'trim · max 255'],
+    ['url', 'String', ['req'], 'Content lives in external storage; Mongo holds URL + metadata'],
+    ['mimeType', 'String', ['req']],
+    ['size', 'Number', ['req'], 'min 0'],
+    ['uploadedBy', 'ObjectId → User', ['fk', 'req']],
+    ['conversationId', 'ObjectId → Conversation', ['fk', 'req'], 'indexed'],
+    ['tags', '[ObjectId → Tag]', ['fk']],
+    ...TS,
+  ]},
+  Tag: { x: 1800, y: 120, hue: 190, sub: 'collection', fields: [
+    ID,
+    ['conversationId', 'ObjectId → Conversation', ['fk', 'req'], 'Compound unique index (conversationId, name)'],
+    ['name', 'String', ['req'], 'trim · max 30 · unique within a conversation'],
+    ['colour', 'String', ['req'], 'Hex colour · validator.isHexColor'],
+    ...TS,
+  ]},
+};
+
+// kind: ref | embed | poly      sc/tc = cardinality at source/target end
+const RELS = [
+  { from: 'Message', field: 'author', to: 'User', sc: '*', tc: '1', kind: 'ref', desc: 'Message.author → User\nmany messages, one author' },
+  { from: 'Message', field: 'conversationId', to: 'Conversation', sc: '*', tc: '1', kind: 'ref', desc: 'Message.conversationId → Conversation\nmany messages per conversation' },
+  { from: 'Message', field: 'repliedTo', to: 'Message', sc: '*', tc: '0..1', kind: 'ref', desc: 'Message.repliedTo → Message\nthreaded replies (self reference)' },
+  { from: 'Message', field: 'reactions', to: 'Reaction', sc: '1', tc: '*', kind: 'embed', desc: 'Message embeds Reaction[]' },
+  { from: 'Message', field: 'mentions', to: 'Mention', sc: '1', tc: '*', kind: 'embed', desc: 'Message embeds Mention[]' },
+  { from: 'Message', field: 'attachments', to: 'Attachment', sc: '1', tc: '*', kind: 'embed', desc: 'Message embeds Attachment[]' },
+  { from: 'Reaction', field: 'users', to: 'User', sc: '*', tc: '*', kind: 'ref', desc: 'Reaction.users → User[]\nwho reacted with this emoji' },
+  { from: 'Mention', field: 'target', to: 'User', sc: '*', tc: '1', kind: 'poly', desc: 'Mention.target → User\nwhen kind = "User"' },
+  { from: 'Mention', field: 'target', to: 'File', sc: '*', tc: '1', kind: 'poly', desc: 'Mention.target → File\nwhen kind = "File"' },
+  { from: 'Mention', field: 'target', to: 'Snippet', sc: '*', tc: '1', kind: 'poly', desc: 'Mention.target → Snippet\nwhen kind = "Snippet"' },
+  { from: 'Attachment', field: 'target', to: 'File', sc: '*', tc: '1', kind: 'poly', desc: 'Attachment.target → File\nwhen kind = "File"' },
+  { from: 'Attachment', field: 'target', to: 'Snippet', sc: '*', tc: '1', kind: 'poly', desc: 'Attachment.target → Snippet\nwhen kind = "Snippet"' },
+  { from: 'Conversation', field: 'members', to: 'User', sc: '*', tc: '*', kind: 'ref', desc: 'Conversation.members → User[]\nmany-to-many, members can be added or removed' },
+  { from: 'Snippet', field: 'uploadedBy', to: 'User', sc: '*', tc: '1', kind: 'ref', desc: 'Snippet.uploadedBy → User' },
+  { from: 'Snippet', field: 'conversationId', to: 'Conversation', sc: '*', tc: '1', kind: 'ref', desc: 'Snippet.conversationId → Conversation' },
+  { from: 'Snippet', field: 'tags', to: 'Tag', sc: '*', tc: '*', kind: 'ref', desc: 'Snippet.tags → Tag[]' },
+  { from: 'File', field: 'uploadedBy', to: 'User', sc: '*', tc: '1', kind: 'ref', desc: 'File.uploadedBy → User' },
+  { from: 'File', field: 'conversationId', to: 'Conversation', sc: '*', tc: '1', kind: 'ref', desc: 'File.conversationId → Conversation' },
+  { from: 'File', field: 'tags', to: 'Tag', sc: '*', tc: '*', kind: 'ref', desc: 'File.tags → Tag[]' },
+  { from: 'Tag', field: 'conversationId', to: 'Conversation', sc: '*', tc: '1', kind: 'ref', desc: 'Tag.conversationId → Conversation\ntag names are unique per conversation' },
+];
+
+const height = (e) => HEAD + e.fields.length * ROW + G;
+const boxOf = (n) => ({ x: ENTITIES[n].x, y: ENTITIES[n].y, w: W, h: height(ENTITIES[n]) });
+const fieldRowY = (n, field) => {
+  const e = ENTITIES[n];
+  const i = Math.max(0, e.fields.findIndex((f) => f[0] === field));
+  return e.y + HEAD + i * ROW + ROW / 2;
+};
+
+/* ---------- Orthogonal router ----------
+   Routes every relationship on a G-pixel grid with A*. Table bodies are obstacles. Each step costs 1,
+   each bend costs BEND, crossing a line already routed costs CROSS and running along one costs OVERLAP,
+   so lines avoid tables, avoid each other, and use as few turns as possible. Lines leave a table
+   horizontally, perpendicular to its edge. */
+const STUB = 2 * G, MARGIN = 1.5 * G, BEND = 5, CROSS = 6, OVERLAP = 40;
+const DX = [1, -1, 0, 0], DY = [0, 0, 1, -1]; // 0 east, 1 west, 2 south, 3 north
+
+function routeAll(rels) {
+  const boxes = {};
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  for (const n in ENTITIES) {
+    const b = boxes[n] = boxOf(n);
+    x0 = Math.min(x0, b.x); y0 = Math.min(y0, b.y);
+    x1 = Math.max(x1, b.x + b.w); y1 = Math.max(y1, b.y + b.h);
+  }
+  const pad = G * 30;
+  const ox = Math.floor((x0 - pad) / G) * G, oy = Math.floor((y0 - pad) / G) * G;
+  const cols = Math.ceil((x1 + pad - ox) / G) + 1, rows = Math.ceil((y1 + pad - oy) / G) + 1;
+  const blocked = new Uint8Array(cols * rows);
+  for (const n in boxes) {
+    const b = boxes[n];
+    const iMin = Math.floor((b.x - MARGIN - ox) / G) + 1, iMax = Math.ceil((b.x + b.w + MARGIN - ox) / G) - 1;
+    const jMin = Math.floor((b.y - MARGIN - oy) / G) + 1, jMax = Math.ceil((b.y + b.h + MARGIN - oy) / G) - 1;
+    for (let j = jMin; j <= jMax; j++) for (let i = iMin; i <= iMax; i++) blocked[j * cols + i] = 1;
+  }
+  const occH = new Uint8Array(cols * rows), occV = new Uint8Array(cols * rows);
+  const size = cols * rows * 4;
+  const gs = new Float32Array(size), parent = new Int32Array(size);
+
+  // binary min-heap of [f, state]
+  let hf = [], hs = [];
+  const push = (f, s) => {
+    let i = hf.length; hf.push(f); hs.push(s);
+    while (i > 0) {
+      const p = (i - 1) >> 1;
+      if (hf[p] <= f) break;
+      hf[i] = hf[p]; hs[i] = hs[p]; i = p;
+    }
+    hf[i] = f; hs[i] = s;
+  };
+  const pop = () => {
+    const s = hs[0], lf = hf.pop(), ls = hs.pop();
+    const n = hf.length;
+    if (n) {
+      let i = 0;
+      for (;;) {
+        let c = 2 * i + 1;
+        if (c >= n) break;
+        if (c + 1 < n && hf[c + 1] < hf[c]) c++;
+        if (hf[c] >= lf) break;
+        hf[i] = hf[c]; hs[i] = hs[c]; i = c;
+      }
+      hf[i] = lf; hs[i] = ls;
+    }
+    return s;
+  };
+
+  // goal: {ci, j0, j1, dirIn, idj}; returns {cost, cells} or null
+  function search(si, sj, sdir, goal, bound) {
+    gs.fill(Infinity); parent.fill(-1); hf = []; hs = [];
+    const start = (sj * cols + si) * 4 + sdir;
+    gs[start] = 0;
+    push(0, start);
+    while (hf.length) {
+      const f = hf[0];
+      if (f >= bound) return null;
+      const s = pop();
+      const dir = s & 3, cell = s >> 2, ci = cell % cols, cj = (cell / cols) | 0;
+      if (ci === goal.ci && cj >= goal.j0 && cj <= goal.j1 && dir === goal.dirIn) {
+        const cells = [];
+        for (let t = s; t !== -1; t = parent[t]) cells.push(t >> 2);
+        return { cost: gs[s], cells: cells.reverse() };
+      }
+      const g = gs[s];
+      for (let nd = 0; nd < 4; nd++) {
+        if (nd === (dir ^ 1)) continue;
+        const ni = ci + DX[nd], nj = cj + DY[nd];
+        if (ni < 0 || nj < 0 || ni >= cols || nj >= rows) continue;
+        const nc = nj * cols + ni;
+        if (blocked[nc]) continue;
+        let c = 1 + (nd !== dir ? BEND : 0);
+        c += nd < 2 ? occH[nc] * OVERLAP + occV[nc] * CROSS : occV[nc] * OVERLAP + occH[nc] * CROSS;
+        if (ni === goal.ci && nd === goal.dirIn) c += 0.6 * Math.abs(nj - goal.idj);
+        const ng = g + c, ns = nc * 4 + nd;
+        if (ng < gs[ns]) {
+          gs[ns] = ng; parent[ns] = s;
+          const h = Math.abs(ni - goal.ci) + (nj < goal.j0 ? goal.j0 - nj : nj > goal.j1 ? nj - goal.j1 : 0);
+          push(ng + h, ns);
+        }
+      }
+    }
+    return null;
+  }
+
+  const dist = (r) => {
+    const a = boxes[r.from], b = boxes[r.to];
+    return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
+  };
+  const order = [...rels].sort((a, b) => dist(a) - dist(b));
+
+  for (const r of order) {
+    const a = boxes[r.from], b = boxes[r.to];
+    const ay = fieldRowY(r.from, r.field);
+    const hasId = ENTITIES[r.to].fields[0][0] === '_id';
+    const idY = hasId ? fieldRowY(r.to, '_id') : b.y + HEAD / 2;
+    let best = null;
+    for (const sSide of ['R', 'L']) for (const tSide of ['L', 'R']) {
+      const ax = sSide === 'R' ? a.x + a.w : a.x;
+      const sx = sSide === 'R' ? ax + STUB : ax - STUB;
+      const txEdge = tSide === 'L' ? b.x : b.x + b.w;
+      const gx = tSide === 'L' ? txEdge - STUB : txEdge + STUB;
+      const goal = {
+        ci: Math.round((gx - ox) / G), dirIn: tSide === 'L' ? 0 : 1,
+        j0: Math.round((b.y + G - oy) / G), j1: Math.round((b.y + b.h - G - oy) / G),
+        idj: Math.round((idY - oy) / G),
+      };
+      const res = search(Math.round((sx - ox) / G), Math.round((ay - oy) / G), sSide === 'R' ? 0 : 1, goal, best ? best.cost : Infinity);
+      if (res && (!best || res.cost < best.cost)) best = { ...res, sSide, tSide, ax, txEdge };
+    }
+    if (!best) { r.route = null; continue; }
+    const pts = best.cells.map((c) => [ox + (c % cols) * G, oy + ((c / cols) | 0) * G]);
+    for (let k = 0; k < best.cells.length; k++) {
+      const c = best.cells[k], nxt = best.cells[k + 1], prv = best.cells[k - 1];
+      for (const o of [nxt, prv]) {
+        if (o === undefined) continue;
+        if (Math.abs(o - c) === 1) occH[c]++; else occV[c]++;
+      }
+    }
+    const last = pts[pts.length - 1];
+    const poly = [[best.ax, ay], ...pts, [best.txEdge, last[1]]];
+    // drop collinear points
+    const out = [poly[0]];
+    for (let k = 1; k < poly.length - 1; k++) {
+      const p = out[out.length - 1], q = poly[k], n = poly[k + 1];
+      if ((p[0] === q[0] && q[0] === n[0]) || (p[1] === q[1] && q[1] === n[1])) continue;
+      out.push(q);
+    }
+    out.push(poly[poly.length - 1]);
+    r.route = { pts: out, sSide: best.sSide, tSide: best.tSide };
+  }
+}
+</script>
+
+<!-- ============ UI ============ -->
+<script id="ui">
+const NS = 'http://www.w3.org/2000/svg';
+
+const $ = (id) => document.getElementById(id);
+const svg = $('stage'), world = $('world'), relG = $('rels'), entG = $('ents'), tip = $('tip');
+const el = (tag, attrs = {}, parent) => {
+  const n = document.createElementNS(NS, tag);
+  for (const k in attrs) n.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(n);
+  return n;
+};
+
+/* ---------- Build tables ---------- */
+for (const [name, e] of Object.entries(ENTITIES)) {
+  const h = height(e);
+  const g = el('g', { class: 'entity' + (e.embedded ? ' embedded' : ''), 'data-name': name }, entG);
+  e.g = g;
+  el('rect', { class: 'box', width: W, height: h, rx: 10 }, g);
+  el('path', { d: `M0 ${HEAD} V10 a10 10 0 0 1 10 -10 H${W - 10} a10 10 0 0 1 10 10 V${HEAD} Z`,
+    fill: `hsl(${e.hue} 55% 42%)` }, g);
+  el('text', { class: 'title', x: 14, y: 18 }, g).textContent = name;
+  el('text', { class: 'sub', x: 14, y: 30 }, g).textContent = e.sub;
+  e.fields.forEach((f, i) => {
+    const y = HEAD + i * ROW;
+    const row = el('g', { class: 'row', 'data-tip': `${f[0]}: ${f[1]}${f[3] ? '\n' + f[3] : ''}` }, g);
+    el('rect', { x: 1, y, width: W - 2, height: ROW, fill: 'transparent' }, row);
+    if (i) el('line', { class: 'rowline', x1: 10, x2: W - 10, y1: y, y2: y }, row);
+    const flags = f[2];
+    const badge = flags.includes('pk') ? 'PK' : flags.includes('emb') ? 'EMB' : flags.includes('fk') ? 'FK' : '';
+    if (badge) el('text', { class: 'badge ' + badge.toLowerCase(), x: 12, y: y + 16 }, row).textContent = badge;
+    const nm = el('text', { x: 44, y: y + 17 }, row);
+    nm.textContent = f[0];
+    if (flags.includes('req')) el('tspan', { class: 'req', dx: 3 }, nm).textContent = '*';
+    el('text', { class: 'type', x: W - 12, y: y + 17, 'text-anchor': 'end' }, row).textContent = f[1];
+  });
+}
+
+/* ---------- Relationship elements ---------- */
+for (const r of RELS) {
+  r.path = el('path', { class: 'rel ' + r.kind }, relG);
+  r.hit = el('path', { class: 'relhit', 'data-tip': r.desc }, relG);
+  r.c1 = el('text', { class: 'card' }, relG);
+  r.c2 = el('text', { class: 'card' }, relG);
+  r.c1.textContent = r.sc;
+  r.c2.textContent = r.tc;
+  if (r.kind === 'embed') r.path.setAttribute('marker-start', 'url(#diamond)');
+  else r.path.setAttribute('marker-end', 'url(#arrow)');
+}
+
+function drawRels() {
+  routeAll(RELS);
+  for (const r of RELS) {
+    if (!r.route) { r.path.setAttribute('d', ''); r.hit.setAttribute('d', ''); continue; }
+    const { pts, sSide, tSide } = r.route;
+    const d = 'M' + pts.map((p) => p.join(' ')).join(' L');
+    r.path.setAttribute('d', d);
+    r.hit.setAttribute('d', d);
+    const s = pts[0], t = pts[pts.length - 1];
+    const sd = sSide === 'R' ? 1 : -1, td = tSide === 'L' ? -1 : 1;
+    r.c1.setAttribute('x', s[0] + sd * 8); r.c1.setAttribute('y', s[1] - 5);
+    r.c1.setAttribute('text-anchor', sd > 0 ? 'start' : 'end');
+    r.c2.setAttribute('x', t[0] + td * 14); r.c2.setAttribute('y', t[1] - 5);
+    r.c2.setAttribute('text-anchor', td > 0 ? 'start' : 'end');
+  }
+}
+
+function place(name) {
+  const e = ENTITIES[name];
+  e.g.setAttribute('transform', `translate(${e.x} ${e.y})`);
+}
+
+/* ---------- Hover highlight + tooltips ---------- */
+function focusEntity(name) {
+  const linked = new Set(name ? [name] : []);
+  RELS.forEach((r) => {
+    const on = name && (r.from === name || r.to === name);
+    if (on) { linked.add(r.from); linked.add(r.to); }
+    r.path.classList.toggle('hl', !!on);
+    r.path.classList.toggle('dim', !!name && !on);
+    r.c1.classList.toggle('hl', !!on); r.c2.classList.toggle('hl', !!on);
+    r.c1.classList.toggle('dim', !!name && !on); r.c2.classList.toggle('dim', !!name && !on);
+  });
+  for (const [n, e] of Object.entries(ENTITIES)) {
+    e.g.classList.toggle('dim', !!name && !linked.has(n));
+    e.g.classList.toggle('focus', n === name);
+  }
+}
+entG.addEventListener('pointerover', (ev) => {
+  const g = ev.target.closest('.entity');
+  if (g) focusEntity(g.dataset.name);
+});
+entG.addEventListener('pointerout', (ev) => {
+  const to = ev.relatedTarget && ev.relatedTarget.closest && ev.relatedTarget.closest('.entity');
+  if (!to) focusEntity(null);
+});
+document.addEventListener('pointermove', (ev) => {
+  const t = ev.target.closest && ev.target.closest('[data-tip]');
+  if (!t || panning) { tip.style.display = 'none'; return; }
+  tip.textContent = t.dataset.tip;
+  tip.style.display = 'block';
+  tip.style.left = Math.min(ev.clientX + 14, innerWidth - 330) + 'px';
+  tip.style.top = Math.min(ev.clientY + 14, innerHeight - 80) + 'px';
+});
+
+/* ---------- Pan / zoom (unbounded: scale is only kept strictly positive & finite) ---------- */
+const view = { x: 0, y: 0, k: 1 };
+const MIN_K = 1e-5, MAX_K = 1e5;
+function apply() {
+  world.setAttribute('transform', `translate(${view.x} ${view.y}) scale(${view.k})`);
+  const pct = view.k * 100;
+  $('zoom').textContent = (pct >= 100 ? Math.round(pct) : pct >= 1 ? pct.toFixed(1) : pct.toPrecision(2)) + '%';
+}
+function zoomAt(cx, cy, factor) {
+  const k = Math.min(MAX_K, Math.max(MIN_K, view.k * factor));
+  const f = k / view.k;
+  view.x = cx - (cx - view.x) * f;
+  view.y = cy - (cy - view.y) * f;
+  view.k = k;
+  apply();
+}
+function fit() {
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  for (const n in ENTITIES) {
+    const b = boxOf(n);
+    x0 = Math.min(x0, b.x); y0 = Math.min(y0, b.y);
+    x1 = Math.max(x1, b.x + b.w); y1 = Math.max(y1, b.y + b.h);
+  }
+  const padX = 50, top = 80, bottom = 60, vw = innerWidth, vh = innerHeight;
+  view.k = Math.min((vw - padX * 2) / (x1 - x0), (vh - top - bottom) / (y1 - y0));
+  view.x = (vw - (x1 - x0) * view.k) / 2 - x0 * view.k;
+  view.y = top + (vh - top - bottom - (y1 - y0) * view.k) / 2 - y0 * view.k;
+  apply();
+}
+
+svg.addEventListener('wheel', (ev) => {
+  ev.preventDefault();
+  // deltaMode 1 = lines; ctrlKey = trackpad pinch (smaller deltas, so boost them)
+  const dy = ev.deltaY * (ev.deltaMode === 1 ? 16 : 1) * (ev.ctrlKey ? 2.5 : 1);
+  zoomAt(ev.clientX, ev.clientY, Math.exp(-dy * 0.0015));
+}, { passive: false });
+
+const pointers = new Map();
+let panning = false, pinch = null;
+
+svg.addEventListener('pointerdown', (ev) => {
+  svg.setPointerCapture(ev.pointerId);
+  pointers.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+  if (pointers.size === 2) {
+    panning = false;
+    const [a, b] = [...pointers.values()];
+    pinch = { d: Math.hypot(a.x - b.x, a.y - b.y) };
+    return;
+  }
+  panning = true;
+  svg.classList.add('panning');
+});
+svg.addEventListener('pointermove', (ev) => {
+  const p = pointers.get(ev.pointerId);
+  if (!p) return;
+  const dx = ev.clientX - p.x, dy = ev.clientY - p.y;
+  p.x = ev.clientX; p.y = ev.clientY;
+  if (pinch && pointers.size === 2) {
+    const [a, b] = [...pointers.values()];
+    const d = Math.hypot(a.x - b.x, a.y - b.y);
+    if (pinch.d > 0 && d > 0) zoomAt((a.x + b.x) / 2, (a.y + b.y) / 2, d / pinch.d);
+    pinch.d = d;
+  } else if (panning) {
+    view.x += dx; view.y += dy; apply();
+  }
+});
+const end = (ev) => {
+  pointers.delete(ev.pointerId);
+  if (pointers.size < 2) pinch = null;
+  if (!pointers.size) { panning = false; svg.classList.remove('panning'); }
+};
+svg.addEventListener('pointerup', end);
+svg.addEventListener('pointercancel', end);
+svg.addEventListener('dblclick', (ev) => zoomAt(ev.clientX, ev.clientY, 2));
+
+const center = () => [innerWidth / 2, innerHeight / 2];
+$('zin').onclick = () => zoomAt(...center(), 1.5);
+$('zout').onclick = () => zoomAt(...center(), 1 / 1.5);
+$('fit').onclick = fit;
+const isDark = () => {
+  const t = document.documentElement.dataset.theme;
+  return t ? t === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+};
+function showTheme() {
+  $('tl').innerHTML = isDark() ? 'light' : '<b>light</b>';
+  $('td').innerHTML = isDark() ? '<b>dark</b>' : 'dark';
+}
+$('theme').onclick = () => {
+  document.documentElement.dataset.theme = isDark() ? 'light' : 'dark';
+  showTheme();
+};
+addEventListener('keydown', (ev) => {
+  if (ev.key === '+' || ev.key === '=') zoomAt(...center(), 1.5);
+  else if (ev.key === '-' || ev.key === '_') zoomAt(...center(), 1 / 1.5);
+  else if (ev.key === '0') fit();
+});
+
+/* ---------- Init ---------- */
+showTheme();
+for (const n in ENTITIES) place(n);
+drawRels();
+fit();
+</script>
+</body>
+</html>
