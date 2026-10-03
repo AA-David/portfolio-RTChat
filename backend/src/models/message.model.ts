@@ -80,6 +80,16 @@ const MessageSchema = new mongoose.Schema(
             ref: 'User',
             required: true,
         },
+        edited: {
+            type: Boolean,
+            required: true,
+            default: false,
+        },
+        deleted: {
+            type: Boolean,
+            required: true,
+            default: false,
+        },
         reactions: [ReactionSchema],
         mentions: [MentionSchema],
         attachments: [AttachmentSchema],

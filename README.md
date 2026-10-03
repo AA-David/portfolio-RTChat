@@ -44,7 +44,7 @@ Collections: `User`, `Conversation`, `Message`, `Tag`, `File`, `Snippet`
 - **Reactions are embedded** directly on Message.
 - **Members, author, tags, and mentions are referenced** by ID, not embedded to avoid duplicating data across many documents.
 
-All collections also have `createdAt` / `updatedAt` (Mongoose `timestamps`). Schemas live in `backend/src/models/`.
+An interactive, zoomable ER diagram made by ai of these collections for reference is in [`backend/er-diagram.html`](backend/er-diagram.html). Just open it in a browser.
 
 ### User
 
@@ -71,6 +71,7 @@ All collections also have `createdAt` / `updatedAt` (Mongoose `timestamps`). Sch
 | `author`         | ObjectId → User         |
 | `conversationId` | ObjectId → Conversation |
 | `repliedTo`      | ObjectId → Message      |
+| `edited`         | Boolean                 |
 | `reactions`      | [Reaction]              |
 | `mentions`       | [Mention]               |
 | `attachments`    | [Attachment]            |
