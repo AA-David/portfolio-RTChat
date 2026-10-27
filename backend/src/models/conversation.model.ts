@@ -25,4 +25,10 @@ const ConversationSchema = new mongoose.Schema(
     { timestamps: true },
 );
 
-export const Conversation = mongoose.model('Conversation', ConversationSchema);
+ConversationSchema.path('members').validate(
+    (members: unknown[]) => members.length >= 2,
+    'A conversation needs at least two members',
+);
+
+const Conversation = mongoose.model('Conversation', ConversationSchema);
+export default Conversation;

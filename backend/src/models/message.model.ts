@@ -62,11 +62,37 @@ const AttachmentSchema = new mongoose.Schema(
     { _id: false },
 );
 
-const MessageSchema = new mongoose.Schema(
+type MentionRef = {
+    kind: (typeof MENTION_KINDS)[number];
+    target: mongoose.Types.ObjectId;
+};
+type AttachmentRef = {
+    kind: (typeof ATTACHMENT_KINDS)[number];
+    target: mongoose.Types.ObjectId;
+};
+type Reaction = { emoji: string; users: mongoose.Types.ObjectId[] };
+
+interface IMessage {
+    content?: string;
+    repliedTo: mongoose.Types.ObjectId | null;
+    author: mongoose.Types.ObjectId;
+    edited: boolean;
+    deleted: boolean;
+    reactions: Reaction[];
+    mentions: MentionRef[];
+    attachments: AttachmentRef[];
+    conversationId: mongoose.Types.ObjectId;
+}
+
+type MessageDoc = mongoose.HydratedDocument<IMessage>;
+
+const MessageSchema = new mongoose.Schema<IMessage>(
     {
         content: {
             type: String,
-            required: true,
+            required: function () {
+                return !this.attachments?.length;
+            },
             trim: true,
             maxlength: 4000,
         },
@@ -151,10 +177,6 @@ async function allInConversation(
     );
 }
 
-type MessageDoc = mongoose.Document & {
-    conversationId: mongoose.Types.ObjectId;
-};
-
 MessageSchema.path('mentions').validate(async function (
     this: MessageDoc,
     mentions: Ref[],
@@ -169,4 +191,5 @@ MessageSchema.path('attachments').validate(async function (
     return allInConversation(this.conversationId, attachments);
 }, 'Attachments must be files or snippets of the same conversation');
 
-export const Message = mongoose.model('Message', MessageSchema);
+const Message = mongoose.model('Message', MessageSchema);
+export default Message;

@@ -28,4 +28,5 @@ const TagSchema = new mongoose.Schema(
 
 TagSchema.index({ conversationId: 1, name: 1 }, { unique: true });
 
-export const Tag = mongoose.model('Tag', TagSchema);
+const Tag = mongoose.model('Tag', TagSchema);
+export default Tag;

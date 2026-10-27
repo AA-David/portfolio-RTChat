@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import validator from 'validator';
 
 const FileSchema = new mongoose.Schema(
     {
@@ -11,6 +12,7 @@ const FileSchema = new mongoose.Schema(
         url: {
             type: String,
             required: true,
+            validate: [validator.isURL, 'Please provide a valid URL'],
         },
         uploadedBy: {
             type: mongoose.Schema.Types.ObjectId,
@@ -20,6 +22,7 @@ const FileSchema = new mongoose.Schema(
         mimeType: {
             type: String,
             required: true,
+            validate: [validator.isMimeType, 'Please provide a valid MIME type'],
         },
         tags: [
             {
@@ -37,9 +40,11 @@ const FileSchema = new mongoose.Schema(
             type: Number,
             required: true,
             min: 0,
+            validate: [Number.isInteger, 'File size must be a whole number of bytes'],
         },
     },
     { timestamps: true },
 );
 
-export const File = mongoose.model('File', FileSchema);
+const File = mongoose.model('File', FileSchema);
+export default File;
