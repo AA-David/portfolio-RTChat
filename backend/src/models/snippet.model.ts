@@ -11,6 +11,7 @@ const SnippetSchema = new mongoose.Schema(
         content: {
             type: String,
             required: true,
+            maxlength: 100_000,
         },
         uploadedBy: {
             type: mongoose.Schema.Types.ObjectId,
@@ -39,4 +40,5 @@ const SnippetSchema = new mongoose.Schema(
     { timestamps: true },
 );
 
-export const Snippet = mongoose.model('Snippet', SnippetSchema);
+const Snippet = mongoose.model('Snippet', SnippetSchema);
+export default Snippet;

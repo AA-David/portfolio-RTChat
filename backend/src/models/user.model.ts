@@ -10,6 +10,10 @@ const UserSchema = new mongoose.Schema(
             trim: true,
             minlength: 3,
             maxlength: 30,
+            validate: [
+                (v: string) => /^[a-zA-Z0-9_]+$/.test(v),
+                'Handle can only contain letters, numbers and underscores',
+            ],
         },
         email: {
             type: String,
@@ -27,9 +31,14 @@ const UserSchema = new mongoose.Schema(
         pfp: {
             type: String,
             default: '',
+            validate: [
+                (v: string) => v === '' || validator.isURL(v),
+                'Please provide a valid profile picture URL',
+            ],
         },
     },
     { timestamps: true },
 );
 
-export const User = mongoose.model('User', UserSchema);
+const User = mongoose.model('User', UserSchema);
+export default User;

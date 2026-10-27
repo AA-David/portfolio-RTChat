@@ -1,0 +1,46 @@
+Conversation screen
+METHOD |PATH                                           |WHO                  |DESCRIPTION
+----------------------------------------------------------------------------------------------------------------
+GET     /conversations/:conversationId                  Member                one specific conversation
+GET     /conversations/:conversationId/messages         Member                all messages in a conversation
+GET     /conversations/:conversationId/files            Member                all files in a conversation
+GET     /conversations/:conversationId/snippets         Member                all snippets in a conversation
+GET     /conversations/:conversationId/tags             Member                all tags in a conversation
+GET     /files/:fileId                                  Member                one specific file
+GET     /snippets/:snippetId                            Member                one specific snippet
+GET     /tags/:tagId                                    Member                one specific tag
+
+POST    /conversations/:conversationId/members          Owner                 add new member
+POST    /conversations/:conversationId/messages         Member                add new message
+POST    /conversations/:conversationId/files            Member                add new file
+POST    /conversations/:conversationId/snippets         Member                add new snippet
+POST    /conversations/:conversationId/tags             Owner, Admin          add new tag
+POST    /messages/:messageId/reactions                  Member                add my reaction to message (body: {emoji})
+
+PATCH   /conversations/:conversationId                  Owner                 edit conversation (title, icon)
+PATCH   /conversations/:conversationId/members/:userId  Owner                 edit member (role)
+PATCH   /conversations/:conversationId/owner            Owner                 transfer ownership of conversation
+PATCH   /files/:fileId                                  Owner, Admin, Author  edit file (title, tags)
+PATCH   /snippets/:snippetId                            Owner, Admin, Author  edit snippet (title, content, language, tags)
+PATCH   /messages/:messageId                            Author                edit message (content)
+PATCH   /tags/:tagId                                    Owner, Admin          edit tag (name, colour)
+
+DELETE  /conversations/:conversationId                  Owner                 delete a conversation
+DELETE  /conversations/:conversationId/members/:userId  Owner                 remove a member from the conversation
+DELETE  /conversations/:conversationId/members/me       Member                leave conversation
+DELETE  /messages/:messageId                            Owner, Admin, Author  tombstone delete a message
+DELETE  /messages/:messageId/reactions/:emoji           Member                remove my reaction from message 
+DELETE  /files/:fileId                                  Owner, Admin, Author  hard delete a file
+DELETE  /snippets/:snippetId                            Owner, Admin, Author  hard delete a snippet
+DELETE  /tags/:tagId                                    Owner, Admin          hard delete a tag
+
+
+Home Screen
+METHOD |PATH                                           |WHO                  |DESCRIPTION
+----------------------------------------------------------------------------------------------------------------
+GET     /users/me                                       Self                  user's handle, pfp, email
+GET     /users/me/conversations                          Self                  user's conversations (title, icon)
+
+POST    /conversations                                  Self                  create a conversation
+
+DELETE  /users/me                                       Self                  delete my account
